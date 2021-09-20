@@ -24,3 +24,5 @@ if ! [[ -f $filename ]]; then
 else
     getprop $filename  # Call the property display function with the file entered
 fi
+
+exit 0
