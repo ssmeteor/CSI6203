@@ -1,5 +1,5 @@
-#Simon David Williams 10530539
 #!/bin/bash
+#Simon David Williams 10530539
 
 # This script script that retrieves the following information about a file the user enters: 
 #   a. Its size in kilobytes 

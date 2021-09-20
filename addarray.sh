@@ -1,5 +1,5 @@
-#Simon David Williams 10530539
 #!/bin/bash
+#Simon David Williams 10530539
 
 # This script employs a c-style loop to calculate the sum of two assignment scores as they appear ordinally in separate arrays
 

@@ -1,5 +1,5 @@
-#Simon David Williams 10530539
 #!/bin/bash
+#Simon David Williams 10530539
 
 # This script will take 3 parameters (integers) and sum them diplaying the total
 # If the total exceeds 30 then a warning message is displayed

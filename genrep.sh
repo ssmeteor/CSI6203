@@ -1,5 +1,5 @@
-#Simon David Williams 10530539
 #!/bin/bash
+#Simon David Williams 10530539
 
 # This script  uses grep, sed and awk in combination to extract specific information from a .html file 
 #  and echo it to the terminal as a formatted summary 
