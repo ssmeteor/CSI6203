@@ -2,7 +2,7 @@
 #Simon David Williams 10530539
 
 # Function used for the user to select their search criteria
-# ADVANCED FUNCTIONAL REQUIREMENT 1
+# ADVANCED FUNCTIONAL REQUIREMENT 1 created this function for multiple parameter calls
 selectsearch() {
     # User now selects the search field and enters the search criteria
     echo -e "1. PROTOCOL"
@@ -14,7 +14,7 @@ selectsearch() {
     echo -e "7. BYTES"
     while true; do
         read -p "Enter the number of the log field above you wish to search, i.e. [ 1, 2, 3, 4, 5, 6, 7 ]: " selfield
-        echo "You have entered $selfield"
+        #echo "You have entered $selfield"
         if [[ $selfield -gt 0 ]] && [[ $selfield -le 7 ]]; then
             break
         else
@@ -53,7 +53,7 @@ selectsearch() {
             echo -e "1. Equal"
             echo -e "2. Not Equal"
             echo -e "3. Less Than"
-            echo -e "4. Great Than"
+            echo -e "4. Greater Than"
             while true; do
                 read -p "Enter the PACKET number comparison type, i.e. [ 1, 2, 3, 4 ]: " selcompare
                 echo "You have entered $selcompare"
@@ -69,6 +69,10 @@ selectsearch() {
                 3) selfilter="\$8<"${selval}  ;; # Any value less than will be searched for 
                 4) selfilter="\$8>"${selval}  ;; # Any value greater thenwill be searched for 
             esac
+            # ADVANCED FUNCTIONAL REQUIREMENT 3 Total Packets and Bytes
+            # Build an AWK statement to sum and print the total
+            selsum="; packtot+=\$8} END { printf \"Total Packets= %'d \\n\", packtot "
+            echo -e $selsum
         ;;
         7)  while true; do # The BYTES value must be an integer so we need to test and request again if not!
                 read -p "Enter the BYTES number value to search for: " selval
@@ -98,6 +102,10 @@ selectsearch() {
                 3) selfilter="\$9<"${selval}  ;; # Any value less than will be searched for 
                 4) selfilter="\$9>"${selval}  ;; # Any value greater thenwill be searched for 
             esac
+            # ADVANCED FUNCTIONAL REQUIREMENT 3 Total Packets and Bytes
+            # Build an AWK statement to sum and print the total
+            selsum="; bytetot+=\$9} END { printf \"Total Bytes= %'d \\n\", bytetot "
+            echo -e $selsum
         ;;
     esac
 }
@@ -117,11 +125,10 @@ if (( $count==0 )); then
 fi
 echo -e "\t"
 echo -e "$count log file(s) found.\n"
-
 # List the log files found to the user
 # The 'ie' variable is used in the prompt to indicate to the user the number to be used for the log file
 #   so make sure it only containd the available log files number
-ie="["
+ie="[A,"
 mennum=1
 for file in "${logs[@]}"; do
     echo -e "$mennum. $file"
@@ -134,32 +141,40 @@ for file in "${logs[@]}"; do
     fi 
     ((mennum++)) # increment the log file number
 done 
-# Get the user to select a log file
+# ADVANCED FUNCTIONAL REQUIREMENT 2 - Search All log files
+# Get the user to select all or a single log file
 while true; do
-    read -p "Enter the number of the file in the menu above you wish to search, i.e. $ie " sel
+    read -p "Enter the number of the file in the menu above you wish to search or A for all, i.e. $ie " sel
     #echo "You have entered $sel"
-    if [[ $sel -gt 0 ]] && [[ $sel -le $count ]]; then
+    if [[ $sel =~ ^[A|a]$ ]]; then  # All files selected
+        selfile=$( echo "${logs[*]}") # This will list all log files in single string space separated
+        paramlimit=1 # if searching all files only one parameter can be entered
+        break
+    elif [[ $sel -gt 0 ]] && [[ $sel -le $count ]]; then
+        selfile=${logs[sel]}  # Set $selfile to the log file selected by the user
+        paramlimit=3  # User can enter up to 3 parameters if searching a single file
         break
     else
         echo "You must select a number of a file"
     fi
 done
-
-# Set $selfile to the log file selected by the user
-selfile=${logs[sel]}
-echo -e "You have selected log file: $selfile"
+echo -e "You have selected log file(s): $selfile"
 echo -e "\t"
 
 # ADVANCED FUNCTIONAL REQUIREMENT 1 - Multiple Search requirements
+# ADVANCED FUNCTIONAL REQUIREMENT 2 - Only one parameter if searching All log files
 # Get the search parameters (user can select up to 3)
-for i in 1 2 3; do
+for (( i=1; i<=$paramlimit; i++ )); do
+    # Get another parameter if parameter limit not reached
     if [[ i -gt 1 ]]; then
-        read -p "Enter 'Y' to select another search parameter: " selYN
+        read -p "Enter 'Y' to select another search parameter (upto $paramlimit allowed): " selYN
         if [[ ! "$selYN" =~ ^[Y|y]$ ]]; then
             break
         fi
     fi
+
     selectsearch  # This function will allow the user to enter a search parameter
+
     # append new search criteria in the $selfilter varible to $selfilters
     if [[ i -eq 1 ]]; then 
         selfilters=${selfilter}
@@ -167,6 +182,7 @@ for i in 1 2 3; do
         selfilters+=" && "${selfilter}
     fi
     echo -e "selfilters=$selfilters"
+
 done
 
 echo -e "\t"
@@ -184,8 +200,13 @@ echo "\$selval=" $selval
 echo -e "\$selfilters=" "$selfilters"
 
 # Now read the file using the filter variable to use the user entered parameters
+# NR==1 is used to print the heading line of the first file
+# $selfilters is used to hold the parameters entered by the user
+# FNR!=1 is used to not print the heading line of other files (if somehow the selected filter match)
+# $13 !~ /normal/ is used to never print lines CLASS=normal
+# $selfile is the file(s) selected by the user (may be all log files in the folder)
 awk 'BEGIN {FS=","} 
-    NR==1 || ('"$selfilters"' && $13 !~ /normal/ )  { print $0 }    
+    NR==1 || ('"$selfilters"' && FNR!=1 && $13 !~ /normal/ )  { print $0 '"$selsum"'}    
     ' $selfile > $seloutput
 #echo "displaying file"
 # Display the formatted search results to the user from the saved file
